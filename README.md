@@ -69,6 +69,29 @@ To invoke query algorithms, the following command line is required:
 
 - The seventh parameter is the number of generated time windows.
 
+After the above command line is completed, the results of ```Online-Query``` and ```PHC-Query``` are both reported.
+Specifically, the results of ```PHC-Query``` are first reported, and the results of ```Online-Query``` are then reported.
+
+### Update
+To invoke ```PHC-Update```, the following command line is required:
+```zsh
+./build/span_core -uidx-bl/-uidx-bl-4col [dataset] [index] [log] [ratio]
+```
+Here, parameters are the same as described above, the only difference is that the fifth parameter specifies the ratio between arrival edges and total edges.
+Specifically, ```ratio``` lies in (0, 1]. Edges over time window [0, ratio * t_max) are used to construct PHC index, and edges over time window [ratio * t_max, t_max) are used as arrival edges to update PHC index.
+
+To invoke ```PHC-Update^*```, the following command line is required:
+```zsh
+./build/span_core -uidx/-uidx-4col [dataset] [index] [log] [ratio]
+```
+Here, parameters are the same as described above, the only difference is that the first parameter is ```-uidx/-uidx-4col```.
+
+### Handle expired edges
+To update PHC index for expired edges, the following command line is required:
+```zsh
+./build/span_core -rm/-rm-4col [dataset] [index] [log] [ratio]
+```
+Specifically, ```ratio``` lies in (0, 1]. Edges over time window [0, ratio * t_max) are regarded as expired edges to update PHC index.
+
 ## Datasets
-The information of used real-world datasets is provided in our paper. Currently, we support ```.fvecs``` file for base datasets and query datasets 
-and ```.ivecs``` for groundtruth file.
+The information of used real-world datasets is provided in our paper.

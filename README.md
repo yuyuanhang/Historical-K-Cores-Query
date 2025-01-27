@@ -20,59 +20,54 @@ This project includes:
 (4) an PHC index maintenance algorithm or edge expiration.
 
 ## Usage
-Step 1. Generate template
+### Compile program
 ```zsh
-./generate_template.sh
+mkdir build
+cd build
+cmake ..
+make
 ```
-
-### Search
-To use search algorithm, generate query instance.
-```zsh
-./generate_query_instances.sh [dim] [metric]
-```
-For instance, the following command line generates an executable program which can work on datasets with dimension 128 and metric euclidean distance. 
-```zsh
-./generate_query_instances.sh 128 l2
-```
-Currently, we support dimension ```no larger than 960``` and three metrics: ```euclidean distance (l2)```, ```cosine similarity (cos)``` and ```inner product (ip)```.
-
-To use the generated executable program, the following parameters need to be provided.
-```zsh
-./query_128_l2 [base_path] [query_path] [graph_type] [graph_path] [groundtruth_path] [e] [k]
-```
-Specifically, ```[base_path]``` is the directory of data points (database); ```[query_path]``` is the directory of query points; ```[graph_type]``` is the type of proximity graph; 
-```[groundtruth_path]``` is the directory of groundtruth; ```[e]``` represents the number of explored vertices; ```[k]``` denotes the number of returned nearest neighbors;
-
-For instance, the following command line performs ANN search on NSW constructed on SIFT dataset 
-(These files in the command line are not included in this project due to their size).
-```zsh
-./query_128_l2 ../dataset/sift/base.fvecs ../dataset/sift/query.fvecs nsw ../dataset/sift/base.fvecs_64_16.nsw ../dataset/sift/groundtruth.ivecs 64 10
-```
-Currently, we support two proximity graphs: ```NSW (nsw)``` and ```HNSW (hnsw)```.
 
 ### Construction
-To use construction algorithm, generate build instance.
+To invoke ```PHC-Construct```, the following command line is required:
 ```zsh
-./generate_build_instances.sh [dim] [metric]
+./build/span_core -idx-bl/-idx-bl-4col [dataset] [index] [num_edge]
 ```
-Similarly, we support dimension ```no larger than 960``` and three metrics: ```euclidean distance (l2)```, ```cosine similarity (cos)``` and ```inner product (ip)```.
+- The first parameter is set according to the format of dataset.
+Specifically, when the format of dataset is ```u, v, t```, use ```-idx-bl```; When the format of dataset is ```u, v, w, t```, use ```-idx-bl-4col```.
 
-To use the generated executable program, the following parameters need to be provided.
+- The second parameter is the path of dataset, only ```*.txt``` file is allowed.
+
+- The third parameter is the path of index, which is stored in binary format.
+
+- The fourth parameter is optional, which represents the number of edges to be loaded.
+Specifically, if this parameter is not specified, all edges in the graph will be loaded.
+If the parameter is specified, edges in the graph are sorted in chronological order, and only the first num_edge edges will be loaded.
+
+To invoke ```PHC-Construct^*```, the following command line is required:
 ```zsh
-./build_128_l2 [base_path] [graph_type] [e] [d_min]
+./build/span_core -idx/-idx-4col [dataset] [index] [num_edge]
 ```
-Specifically, ```[base_path]``` is the directory of data points (database); ```[graph_type]``` is the type of proximity graph; 
-```[e]``` represents the number of explored vertices; ```[d_min]``` denotes minimum degree in the proximity graph (by default, d_max = 2 * d_min);
+Here, parameters are the same as described above, the only difference is that the first parameter is ```-idx/-idx-4col```.
 
-For instance, the following command line establishes a HNSW graph on SIFT dataset 
-(These files in the command line are not included in this project due to their size).
+### Search
+To invoke query algorithms, the following command line is required:
 ```zsh
-./build_128_l2 ../dataset/sift/base.fvecs hnsw 64 16
+./build/span_core -q-sd/-q-sd-4col [dataset] [index] [log] [t_range] [k_range] [num_query]
 ```
-Similarly, we support two proximity graphs: ```NSW (nsw)``` and ```HNSW (hnsw)```.
+- Similarly, the first parameter is set according to the format of dataset.
 
-Notice the parameters ```dim``` and ```metric``` that are provided to generate query (resp. build) instances must be consistent with dimension and metric of datasets. 
-Otherwise, the executable program may shut down, or the recall (resp. the quality of proximity graph) may be poor.
+- The second parameter is the path of dataset.
+
+- The third parameter is the path of index, which is loaded into main memory.
+
+- The fourth parameter is the path of log file, which records experimental results such as average running time and standard deviation.
+
+- The fifth parameter is the length of generated time windows, i.e., |t_e - t_s|. ```t_range``` lies in [1, 100], which sets the length of generated time windows to ```t_range/100*t_max```.
+
+- The sixth parameter specifies the value of ```k```. ```k_range``` lies in [1, 10], which sets ```k``` to ```k_range/10*k_max```.
+
+- The seventh parameter is the number of generated time windows.
 
 ## Datasets
 The information of used real-world datasets is provided in our paper. Currently, we support ```.fvecs``` file for base datasets and query datasets 

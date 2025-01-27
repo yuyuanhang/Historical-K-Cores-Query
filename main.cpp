@@ -207,8 +207,8 @@ int main(int argc, char *argv[]) {
         string idx_path(argv[3]);
         string log_path(argv[4]);
         int t_range = atoi(argv[5]);
-//        int k_range = atoi(argv[6]);
-        int cnt = atoi(argv[6]);
+        int k_range = atoi(argv[6]);
+        int cnt = atoi(argv[7]);
 
         auto *g = new Graph();
 //        g->init_log(log_path);
@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
         fprintf(log_f,"Index path:%s\n",idx_path.c_str());
         fprintf(log_f,"t_range: %d, t_max = %d, k_max = %d,\n",t_range,g->t_,g->k_max_);
 
-        for (int k_range = 6; k_range <= 6; k_range+=2){
+        //for (int k_range = 6; k_range <= 6; k_range+=2){
             int k = g->k_max_*k_range/10;
             fprintf(log_f,"-------\n");
             fprintf(log_f,"k_range = %d,k = %d\n",k_range,k);
@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
 
             times.clear();
 
-        }
+        //}
         delete g;
         fclose(log_f);
     }

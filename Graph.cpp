@@ -830,9 +830,9 @@ void Graph::update_core_t() {
         for (int j = min_k_; j <= core_[i]; j++) {
             if (core_t_[i][j].back().second == t_) {
                 core_t_[i][j].back().second = inf_;
+            } else {
+                core_t_[i][j].emplace_back(t_, inf_);
             }
-            // last item is (t_-1, t_-1)
-            // core_t_[i][j].emplace_back(std::make_pair(t_, inf_));
         }
     }
 }
@@ -1206,26 +1206,28 @@ void Graph::update_baseline() {
     init_nbr_cnt();
 
     auto start = chrono::high_resolution_clock::now();
-    int cnt_bl = 0;
-    double removed_time = 0;
+
     for (auto i = t_; i < t_max_; i++) {
         // G = G \cup E_{i}
-        edges_idx_.resize(i+1, 0);
-        t_ = i+1;
+        t_++;
+        edges_idx_.resize(t_ + 1);
+        edges_idx_[t_] = edges_idx_[t_ - 1];
+
         for (auto edge: t_edges_[i]) {
-            cnt_bl++;
             edges_.emplace_back(edge);
 
-            auto u = edge.first;
-            auto v = edge.second;
+            auto src = edge.first;
+            auto dest = edge.second;
 
             auto expand = [&](int u, int v) {
-                if(u+1 > nbr_.size()){
-                    n_ = u+1;
+                if(u + 1 > nbr_.size()){
+                    n_ = u + 1;
                     nbr_.resize(n_);
                     nbr_cnt_.resize(n_);
                 }
+
                 nbr_[u].emplace_back(make_pair(v,i));
+
                 if (nbr_cnt_[u].find(v) != nbr_cnt_[u].end()) { // (u, v) is not a new edge
                     nbr_cnt_[u].find(v)->second++;
                 } else {
@@ -1234,28 +1236,25 @@ void Graph::update_baseline() {
                 }
             };
 
-            expand(u, v);
-            expand(v, u);
-            edges_idx_[i]++;
+            expand(src, dest);
+            expand(dest, src);
+            edges_idx_[t_]++;
 
             // prepare parameters for core decompose
             t_offset_.assign(n_, 0);
             core_.resize(n_, 0);
             v_a_.assign(n_, false);
+
             // core decompose
             vector<int> old_core(core_);
-            auto removed_start = chrono::high_resolution_clock::now();
             core_decomposition();
-            auto removed_end = chrono::high_resolution_clock::now();
-            chrono::duration<double> removed_duration = removed_end - removed_start;
-            removed_time += removed_duration.count();
 
             // initialize index for new vertices/core values
             core_t_.resize(n_);
             for (auto u = 0; u < n_; u++) {
                 if (old_core[u] == core_[u]) continue;
-                core_t_[u].resize(core_[u]+1);
-                for (auto k = max(min_k_, old_core[u]+1); k <= core_[u]; k++) core_t_[u][k].push_back(make_pair(0, inf_));
+                core_t_[u].resize(core_[u] + 1);
+                for (auto k = max(min_k_, old_core[u] + 1); k <= core_[u]; k++) core_t_[u][k].emplace_back(0, inf_);
             }
             // prepare parameters
             compute_core_deg(0);
@@ -1292,9 +1291,9 @@ void Graph::update_baseline() {
                     q.pop();
                     v_a_[u] = false;
                     int oc = core[u];
-                    memset(cnt,0,sizeof(int)*(oc+1));
+                    memset(cnt, 0,sizeof(int) * (oc + 1));
                     // compute local core
-                    for (int j = nbr_[u].size()-1; j >= 0; j--) {
+                    for (int j = nbr_[u].size() - 1; j >= 0; j--) {
                         int v = nbr_[u][j].first;
                         int t = nbr_[u][j].second;
                         if (t <= t_s) break;
@@ -1348,28 +1347,33 @@ void Graph::update_baseline() {
                     for (int k = oc; k > max(core[u], min_k_-1); k--) {
                         auto old_rct = rct(u, k);
                         if (old_rct != t_s+1) {
-                            core_t_[u][k].back().second = t_-1;
-                            core_t_[u][k].emplace_back(make_pair(t_s+1, inf_));
+                            int sz = core_t_[u][k].size();
+                            if (sz >= 2) {
+                                if (core_t_[u][k][sz-2].second == t_ - 1) { // not a new t_e
+                                    core_t_[u][k].back().first = t_s+1;
+                                } else {
+                                    core_t_[u][k].back().second = t_ - 1;
+                                    core_t_[u][k].emplace_back(t_s+1, inf_);
+                                }
+                            } else {
+                                core_t_[u][k].back().second = t_ - 1;
+                                core_t_[u][k].emplace_back(t_s+1, inf_);
+                            }
                         }
                     }
                 }
             }
             delete[] cnt;
-            fprintf(log_f_, "%d ", cnt_bl);
             auto end = chrono::high_resolution_clock::now();
             chrono::duration<double> diff = end - start;
-            cout << cnt_bl << endl;
             if (diff.count() >= 43200) { //12 hrs
-                fprintf(log_f_, "%d ", cnt_bl);
                 fprintf(log_f_,"updating running time: %.2f seconds\n", diff.count());
-                fprintf(log_f_,"removed running time: %.2f seconds\n", removed_time);
                 exit(0);
             }
         }
     }
     auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> diff = end - start;
-    fprintf(log_f_, "%d ", cnt_bl);
     if(log_f_ != nullptr) fprintf(log_f_,"updating running time: %.2f seconds\n", (double)diff.count());
 }
 

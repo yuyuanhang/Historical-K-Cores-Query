@@ -517,10 +517,10 @@ int main(int argc, char *argv[]) {
 
         g->load(graph_path,strcmp(argv[1],"-uidx") == 0);
 
-        g->load_idx(idx_path);
-        //g->index();
+        //g->load_idx(idx_path);
+        g->index();
         g->update_dec();
-        // g->write_idx(idx_path);
+        g->write_idx(idx_path);
         delete g;
     }
 

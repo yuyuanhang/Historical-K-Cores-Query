@@ -659,9 +659,9 @@ unordered_map<int, int> Graph::compute_rct(int old_inv, int k, set<int> k_verts,
             int u = edge.first;
             int v = edge.second;
 
-            if (!v_a_[u] || !v_a_[v]) continue;
+            if (!v_a_[u] && !v_a_[v]) continue;
 
-            if (!v_b_[u]) { // the computation of u has not been finished yet
+            if (v_a_[u] && !v_b_[u]) { // the computation of u has not been finished yet
                 del_rct(u ,v);
                 if (rct_cnt_[u].size() < k) {
                     q.push(u);
@@ -669,11 +669,24 @@ unordered_map<int, int> Graph::compute_rct(int old_inv, int k, set<int> k_verts,
                 }
             }
 
-            if (!v_b_[v]) {
+            if (v_a_[v] && !v_b_[v]) {
                 del_rct(v ,u);
                 if (rct_cnt_[v].size() < k) {
                     q.push(v);
                     v_b_[v] = true;
+                }
+            }
+        }
+
+        for (auto &u : poten_verts) {
+            auto rct_copy = rct_cnt_[u];
+            for (auto &v : rct_copy) {
+                if (!v_a_[v.first] && rct(v.first, k) == i + 1) {
+                    rct_cnt_[u].erase(v.first);
+                    if (rct_cnt_[u].size() < k && !v_b_[u]) {
+                        q.push(u);
+                        v_b_[u] = true;
+                    }
                 }
             }
         }
@@ -783,11 +796,11 @@ void Graph::update_core(int u, int v, int t) {
                 core_t_[km_vert.first][k+1].back().first = km_vert.second;
             } else {
                 core_t_[km_vert.first][k+1].back().second = t;
-                core_t_[km_vert.first][k+1].emplace_back(make_pair(km_vert.second, inf_));
+                core_t_[km_vert.first][k+1].emplace_back(km_vert.second, inf_);
             }
         } else {
             core_t_[km_vert.first][k+1].back().second = t;
-            core_t_[km_vert.first][k+1].emplace_back(make_pair(km_vert.second, inf_));
+            core_t_[km_vert.first][k+1].emplace_back(km_vert.second, inf_);
         }
     }
 
@@ -799,7 +812,6 @@ void Graph::update_core(int u, int v, int t) {
 void Graph::init_rct_cnt(int k, int t, set<int> k_verts) {
     v_a_.assign(n_, false);
     for (auto &u : k_verts) {
-        if (rct(u, k) <= t) continue;
         v_a_[u] = true;
         rct_cnt_[u].clear();
 
@@ -807,19 +819,13 @@ void Graph::init_rct_cnt(int k, int t, set<int> k_verts) {
             int v = nbr_[u][i].first;
             int ts = nbr_[u][i].second;
             if (ts < t) break;
-            if (!v_a_[v]) continue;
-            if (rct_cnt_[u].find(v) == rct_cnt_[u].end()){
-                rct_cnt_[u][v] = 1;
-            }else{
-                rct_cnt_[u][v]++;
+            if (rct(v, k) > t || k_verts.find(v) != k_verts.end()) {
+                if (rct_cnt_[u].find(v) == rct_cnt_[u].end()){
+                    rct_cnt_[u][v] = 1;
+                }else{
+                    rct_cnt_[u][v]++;
+                }
             }
-        }
-    }
-    // check
-    for (auto &u : k_verts) {
-        if (rct(u, k) <= t) continue;
-        if (rct_cnt_[u].size() < k) {
-            cout << "wrong rct_cnt_" << endl; exit(0);
         }
     }
 }
@@ -833,6 +839,8 @@ void Graph::update_core_t() {
             } else {
                 core_t_[i][j].emplace_back(t_, inf_);
             }
+            // last item is (t_-1, t_-1)
+            // core_t_[i][j].emplace_back(std::make_pair(t_, inf_));
         }
     }
 }
@@ -1497,6 +1505,20 @@ bool Graph::query(int u, int t_s, int t_e, int k) {
 void Graph::write_idx(const string &path) {
     auto fp = fopen(path.c_str(),"wb");
     fwrite(&n_,sizeof(unsigned int),1,fp);
+
+    // debug
+    for (int u = 0; u < n_; ++u) {
+        if (log_f_ != nullptr) fprintf(log_f_, "vertex %d\n", u);
+        int cs = core_t_[u].size();
+        if (log_f_ != nullptr) fprintf(log_f_, "core_value %d\n", cs);
+
+        for (int k = min_k_; k < cs; ++k) {
+            for (auto &i:core_t_[u][k]){
+                if (log_f_ != nullptr) fprintf(log_f_, "[%d, %d]", i.first, i.second);
+            }
+            if (log_f_ != nullptr) fprintf(log_f_, "\n");
+        }
+    }
 
     for (int u = 0; u < n_; ++u) {
         int cs = core_t_[u].size();

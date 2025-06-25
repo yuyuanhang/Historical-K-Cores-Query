@@ -678,19 +678,6 @@ unordered_map<int, int> Graph::compute_rct(int old_inv, int k, set<int> k_verts,
             }
         }
 
-        for (auto &u : poten_verts) {
-            auto rct_copy = rct_cnt_[u];
-            for (auto &v : rct_copy) {
-                if (!v_a_[v.first] && rct(v.first, k) == i + 1) {
-                    rct_cnt_[u].erase(v.first);
-                    if (rct_cnt_[u].size() < k && !v_b_[u]) {
-                        q.push(u);
-                        v_b_[u] = true;
-                    }
-                }
-            }
-        }
-
         while (!q.empty()) {
             int u = q.front(); q.pop();
             poten_verts.erase(u);
@@ -735,7 +722,7 @@ unordered_map<int, int> Graph::compute_rct(int old_inv, int k, set<int> k_verts,
 
             if (!v_a_[u] || !v_a_[v]) continue;
 
-            if (!v_b_[u]) { // the computation of u has not been finished yet
+            if (v_a_[u] && !v_b_[u]) { // the computation of u has not been finished yet
                 del_rct(u ,v);
                 if (rct_cnt_[u].size() < k) {
                     q.push(u);
@@ -743,7 +730,7 @@ unordered_map<int, int> Graph::compute_rct(int old_inv, int k, set<int> k_verts,
                 }
             }
 
-            if (!v_b_[v]) {
+            if (v_a_[v] && !v_b_[v]) {
                 del_rct(v ,u);
                 if (rct_cnt_[v].size() < k) {
                     q.push(v);
@@ -751,6 +738,7 @@ unordered_map<int, int> Graph::compute_rct(int old_inv, int k, set<int> k_verts,
                 }
             }
         }
+
         while (!q.empty()) {
             int u = q.front(); q.pop();
             int old_rct = rct(u, k);
@@ -785,7 +773,7 @@ void Graph::update_core(int u, int v, int t) {
     for (auto k_vert : k_verts) {
         core_[k_vert] = k+1;
         core_t_[k_vert].resize(k+2);
-        core_t_[k_vert][k+1].emplace_back(make_pair(0, inf_));
+        core_t_[k_vert][k+1].emplace_back(0, inf_);
     }
     init_rct_cnt(k+1, 0, k_verts);
     auto km_verts = compute_rct(0, k+1, k_verts, r);
@@ -811,19 +799,29 @@ void Graph::update_core(int u, int v, int t) {
 
 void Graph::init_rct_cnt(int k, int t, set<int> k_verts) {
     v_a_.assign(n_, false);
+    queue<int> q;
     for (auto &u : k_verts) {
         v_a_[u] = true;
+        q.push(u);
+    }
+
+    while (!q.empty()) {
+        auto u = q.front(); q.pop();
         rct_cnt_[u].clear();
 
         for (int i = nbr_[u].size()-1; i >= 0; i--){
             int v = nbr_[u][i].first;
             int ts = nbr_[u][i].second;
             if (ts < t) break;
-            if (rct(v, k) > t || k_verts.find(v) != k_verts.end()) {
+            if (v_a_[v] || rct(v, k) > t) {
                 if (rct_cnt_[u].find(v) == rct_cnt_[u].end()){
                     rct_cnt_[u][v] = 1;
                 }else{
                     rct_cnt_[u][v]++;
+                }
+                if (!v_a_[v]) {
+                    q.push(v);
+                    v_a_[v] = true;
                 }
             }
         }

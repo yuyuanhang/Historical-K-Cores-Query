@@ -1,4 +1,9 @@
 # PHC
+## Update
+There is a minor mistake in the PHC-Update* algorithm that can lead to incorrect results, which we have now corrected in our implementation.
+Specifically, in Lines 1–3 of Algorithm 14 (“UpdateEIT”), the original pseudocode initializes CN only for the vertices in the candidate set C;
+The revised version initializes CN for every vertex in the neighborhood of each vertex in C whose core value in the [t_{s}, t_{max}] window is at least k.
+
 ## Introduction
 This project includes:
 

@@ -100,3 +100,15 @@ Specifically, ```ratio``` lies in (0, 1]. Edges over time window [0, ratio * t_m
 
 ## Datasets
 The information of used real-world datasets is provided in our paper.
+<pre lang="bibtex">
+@article{yu2025querying,
+  title={Querying historical K-cores in large temporal graphs},
+  author={Yu, Yuanhang and Wen, Dong and Yu, Michael and Qin, Lu and Zhang, Ying and Zhang, Wenjie and Lin, Xuemin},
+  journal={The VLDB Journal},
+  volume={34},
+  number={2},
+  pages={26},
+  year={2025},
+  publisher={Springer}
+}
+</pre>
